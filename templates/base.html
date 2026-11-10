@@ -1,0 +1,21 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>{% block title %}Clubes do Oeste{% endblock %}</title>
+  <link rel="stylesheet" href="{{ url_for('static',filename='style.css') }}">
+</head>
+<body>
+  <header><nav class="wrap">
+    <a class="brand" href="{{ url_for('home') }}"><span class="mark" aria-hidden="true">C</span>Clubes do Oeste</a>
+    <div class="actions"><a class="navlink" href="{{ url_for('home') }}">Clubes</a>
+      {% if g.user %}<a href="{{ url_for('panel') }}">Meu painel</a>
+      <form method="post" action="{{ url_for('logout') }}"><input type="hidden" name="csrf" value="{{ session.csrf }}"><button class="light">Sair</button></form>
+      {% else %}<a class="button" href="{{ url_for('login') }}">Entrar</a>{% endif %}
+    </div>
+  </nav></header>
+  <main class="wrap">
+    {% for kind,msg in get_flashed_messages(with_categories=true) %}<p class="notice {{ kind }}" role="status">{{ msg }}</p>{% endfor %}
+    {% block main %}{% endblock %}
+  </main>
+</body></html>

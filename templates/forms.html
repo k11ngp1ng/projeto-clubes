@@ -1,0 +1,14 @@
+{% macro csrf() %}<input type="hidden" name="csrf" value="{{ session.csrf }}">{% endmacro %}
+{% macro input(name,label,type='text',value='',required=true) %}
+<label>{{ label }}<input type="{{ type }}" name="{{ name }}" value="{{ value if type!='password' else '' }}" {% if required %}required{% endif %}{% if type=='password' %} minlength="8" maxlength="128"{% endif %}></label>
+{% endmacro %}
+{% macro select(name,label,options,current='') %}
+<label>{{ label }}<select name="{{ name }}" required>{% for val in options %}<option {% if val==current %}selected{% endif %}>{{ val }}</option>{% endfor %}</select></label>
+{% endmacro %}
+{% macro club_inputs(c=none) %}
+<div class="grid">{% for key,label in club_fields %}
+{% if key=='uf' %}{{ select(key,label,states,c.uf if c else 'PR') }}
+{% elif key=='fee' %}{{ input(key,label,value=('%.2f'|format(c.fee/100) if c else '50,00')) }}
+{% else %}{{ input(key,label,'email' if key=='email' else 'tel' if key=='phone' else 'text',c[key] if c else '') }}{% endif %}
+{% endfor %}</div>
+{% endmacro %}

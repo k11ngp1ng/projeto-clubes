@@ -1,0 +1,10 @@
+{% extends 'base.html' %}{% block main %}
+<div class="hero"><div><h1>Encontre seu clube</h1><p>Consulte os eventos e veja a disponibilidade do salão de cada clube.</p></div>
+<a class="button" href="{{ url_for('signup') }}">Solicitar associação</a></div>
+<section><div class="section-heading"><h2>Diretório de clubes</h2>
+<div class="filters"><a class="{{ 'selected' if not city }}" href="{{ url_for('home') }}">Todos</a>
+{% for c in cities %}<a class="{{ 'selected' if city==c.city }}" href="{{ url_for('home',cidade=c.city) }}">{{ c.city }}</a>{% endfor %}</div></div>
+<div class="directory">{% for c in clubs %}<a class="club-row" href="{{ url_for('club',cid=c.id) }}">
+<span class="monogram tone-{{ c.id % 4 }}">{{ c.initials }}</span><div><h3>{{ c.name }}</h3><span>{{ c.district }} · {{ c.city }}, {{ c.uf }}</span></div>
+<span class="view">Ver clube <b aria-hidden="true">↗</b></span></a>{% else %}<p class="box">Nenhum clube nesta cidade.</p>{% endfor %}</div></section>
+{% endblock %}

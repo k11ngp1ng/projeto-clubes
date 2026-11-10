@@ -1,0 +1,14 @@
+{% extends 'base.html' %}{% from 'forms.html' import csrf,input,select with context %}{% block main %}
+<a class="back" href="{{ url_for('home') }}">← Todos os clubes</a><h1>Solicitar associação</h1><p>A presidência do clube analisa o cadastro. Acompanhe a resposta entrando com seu e-mail.</p>
+{% set f=request.form %}
+<form method="post" class="box stack">{{ csrf() }}
+<h2>Clube e acesso</h2><div class="grid"><label>Clube<select name="club">{% for c in clubs %}<option value="{{ c.id }}" {% if c.id|string==f.get('club',request.args.get('clube')) %}selected{% endif %}>{{ c.name }}</option>{% endfor %}</select></label>
+{{ select('category','Tipo solicitado',categories[2:],f.get('category')) }}
+{{ input('email','E-mail','email',f.get('email','')) }}{{ input('password','Senha (mínimo de 8 caracteres)','password') }}</div>
+<h2>Dados do sócio</h2><div class="grid">
+{% for k,l,t in [('name','Nome completo','text'),('cpf','CPF','text'),('birth','Data de nascimento','date'),('phone','Telefone','tel'),('address','Endereço','text'),('district','Bairro','text'),('city','Cidade','text')] %}{{ input(k,l,t,f.get(k,'')) }}{% endfor %}
+{{ select('uf','UF',states,f.get('uf','PR')) }}
+{{ select('sex','Sexo',['Feminino','Masculino','Outro','Prefiro não informar'],f.get('sex')) }}
+{{ select('civil','Estado civil',['Solteiro(a)','Casado(a)','União estável','Divorciado(a)','Viúvo(a)','Outro'],f.get('civil')) }}
+</div>{{ input('interests','Interesses (por exemplo, pesca ou gastronomia)','text',f.get('interests',''),false) }}
+<button>Enviar cadastro</button></form>{% endblock %}

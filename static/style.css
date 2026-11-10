@@ -1,0 +1,429 @@
+:root {
+  --ink: #1a342d;
+  --green: #195c49;
+  --line: #ccd7cd;
+  --paper: #f6f7f1;
+  --muted: #4f655c;
+  font:
+    16px/1.55 "Segoe UI",
+    Arial,
+    sans-serif;
+  color: var(--ink);
+  background: var(--paper);
+}
+* {
+  box-sizing: border-box;
+}
+body {
+  margin: 0;
+}
+a {
+  color: var(--green);
+  text-underline-offset: 3px;
+}
+a:hover {
+  text-decoration: underline;
+}
+a:focus-visible,
+button:focus-visible,
+summary:focus-visible {
+  outline: 3px solid #a36222;
+  outline-offset: 4px;
+}
+.wrap {
+  width: min(1080px, calc(100% - 48px));
+  margin: auto;
+}
+header {
+  background: #fff;
+  border-bottom: 1px solid var(--line);
+}
+header nav,
+.actions,
+.section-heading,
+.row,
+.hero,
+.switcher {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+header nav {
+  min-height: 76px;
+}
+.actions {
+  justify-content: flex-start;
+  flex-wrap: wrap;
+}
+.actions a,
+.brand {
+  text-decoration: none;
+  font-weight: 650;
+}
+.brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  color: var(--ink);
+  font-size: 20px;
+  letter-spacing: -0.6px;
+}
+.mark,
+.monogram {
+  display: grid;
+  place-items: center;
+  font:
+    bold 22px Georgia,
+    serif;
+}
+.mark {
+  width: 34px;
+  height: 38px;
+  color: white;
+  background: var(--green);
+  border-radius: 5px 5px 15px 15px;
+}
+main {
+  padding: 36px 0 70px;
+}
+.hero {
+  padding: 26px 0 38px;
+  border-bottom: 1px solid var(--line);
+  margin-bottom: 30px;
+}
+.hero p,
+.row p,
+article p {
+  margin: 5px 0;
+}
+h1,
+h2,
+h3,
+p {
+  overflow-wrap: anywhere;
+}
+h1,
+h2,
+h3 {
+  line-height: 1.15;
+  margin: 0;
+}
+h1 {
+  font:
+    500 clamp(2.4rem, 5vw, 4rem)/1.08 Georgia,
+    serif;
+  letter-spacing: -0.045em;
+  margin: 8px 0 14px;
+}
+h2 {
+  font:
+    500 1.75rem/1.16 Georgia,
+    serif;
+  margin: 12px 0 18px;
+}
+h3 {
+  font-size: 1.12rem;
+  font-weight: 640;
+}
+p,
+.club-row span:not(.monogram),
+dd {
+  color: var(--muted);
+}
+small {
+  font-size: 0.85rem;
+  color: var(--green);
+  font-weight: 650;
+}
+button,
+.button {
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+  min-height: 41px;
+  padding: 9px 17px;
+  border: 1px solid var(--green);
+  border-radius: 7px;
+  background: var(--green);
+  color: white;
+  line-height: 1.35;
+  font-family: inherit;
+  font-size: 0.94rem;
+  font-weight: 600;
+  cursor: pointer;
+  text-decoration: none;
+}
+.button:hover,
+button:hover {
+  filter: brightness(0.92);
+  text-decoration: none;
+}
+.light {
+  background: white;
+  color: var(--green);
+  border-color: var(--line);
+}
+.filters,
+.tabs {
+  display: flex;
+  gap: 5px;
+  flex-wrap: wrap;
+}
+.filters a,
+.tabs a {
+  border-radius: 6px;
+  color: var(--muted);
+  text-decoration: none;
+  font-size: 0.9rem;
+  padding: 7px 12px;
+}
+.selected,
+.filters a:hover,
+.tabs a:hover {
+  background: #e0eade;
+  color: #164b38 !important;
+}
+.section-heading {
+  margin: 0 0 12px;
+}
+.section-heading h2 {
+  margin: 0;
+}
+.directory,
+article,
+.box {
+  background: white;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+}
+.directory {
+  overflow: hidden;
+}
+.club-row {
+  color: var(--ink);
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  padding: 21px 24px;
+  text-decoration: none;
+}
+.club-row + .club-row {
+  border-top: 1px solid var(--line);
+}
+.club-row:hover {
+  background: #fafcf8;
+  text-decoration: none;
+}
+.club-row h3 {
+  margin-bottom: 4px;
+}
+.club-row span {
+  font-size: 0.9rem;
+}
+.club-row .monogram {
+  min-width: 58px;
+  height: 58px;
+  border-radius: 8px;
+  font-size: 18px;
+  letter-spacing: 0.02em;
+}
+.tone-1 {
+  background: #dce9d7;
+  color: #315335;
+}
+.tone-2 {
+  background: #e1e9eb;
+  color: #345767;
+}
+.tone-3 {
+  background: #f1e5c9;
+  color: #705a27;
+}
+.tone-0 {
+  background: #eee2d8;
+  color: #744d39;
+}
+.view {
+  margin-left: auto;
+  white-space: nowrap;
+}
+.view b {
+  margin-left: 6px;
+}
+.box,
+article {
+  padding: 20px 24px;
+  margin: 0 0 12px;
+}
+.columns,
+.grid,
+dl {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+.columns {
+  align-items: start;
+  gap: 24px;
+}
+.narrow {
+  max-width: 470px;
+  margin: 35px auto;
+}
+.stack,
+label {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.stack > button {
+  align-self: flex-start;
+}
+.stack h2 {
+  margin: 6px 0;
+}
+.stack .grid {
+  margin: 6px 0;
+}
+.stack label,
+label {
+  gap: 5px;
+  color: var(--ink);
+  font-size: 0.92rem;
+  font-weight: 600;
+}
+input,
+select,
+textarea {
+  width: 100%;
+  padding: 10px 12px;
+  font: inherit;
+  background: #fff;
+  color: var(--ink);
+  border: 1px solid #a6b5ac;
+  border-radius: 6px;
+}
+textarea {
+  min-height: 82px;
+  resize: vertical;
+}
+.notice {
+  padding: 12px 18px;
+  background: #e0ecdf;
+  border-left: 4px solid var(--green);
+  color: var(--ink);
+}
+.erro {
+  background: #fff0ea;
+  border-color: #ad5030;
+}
+.back {
+  display: inline-block;
+  margin-bottom: 8px;
+}
+.tabs {
+  border-bottom: 1px solid var(--line);
+  padding-bottom: 12px;
+  margin: 20px 0 24px;
+}
+.switcher {
+  justify-content: flex-start;
+  align-items: flex-end;
+}
+.pill {
+  font-size: 0.8rem;
+  background: #e7eee5;
+  color: var(--green);
+  padding: 4px 11px;
+  border-radius: 40px;
+  white-space: nowrap;
+}
+summary {
+  cursor: pointer;
+  color: var(--green);
+  font-weight: 650;
+}
+details form,
+article details {
+  margin-top: 14px;
+}
+dl {
+  font-size: 0.9rem;
+  gap: 6px;
+}
+dt {
+  font-weight: 650;
+}
+dd {
+  margin: 0;
+}
+@media (max-width: 650px) {
+  .wrap {
+    width: calc(100% - 32px);
+  }
+  header nav {
+    min-height: 64px;
+    gap: 8px;
+  }
+  .brand {
+    font-size: 16px;
+    gap: 7px;
+  }
+  .mark {
+    width: 26px;
+    height: 30px;
+  }
+  .navlink {
+    display: none;
+  }
+  .hero,
+  .section-heading {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+  .hero {
+    padding: 9px 0 22px;
+    margin-bottom: 22px;
+  }
+  main {
+    padding-top: 22px;
+  }
+  .columns,
+  .grid {
+    grid-template-columns: 1fr;
+  }
+  .club-row {
+    padding: 15px;
+    gap: 12px;
+  }
+  .club-row .monogram {
+    min-width: 45px;
+    height: 45px;
+    font-size: 14px;
+  }
+  .view {
+    display: none;
+  }
+  .box,
+  article {
+    padding: 16px;
+  }
+  .actions {
+    gap: 9px;
+  }
+  .filters a,
+  .tabs a {
+    padding: 6px 9px;
+  }
+  .row {
+    flex-wrap: wrap;
+  }
+  .switcher {
+    flex-wrap: wrap;
+  }
+  .section-heading p {
+    margin: 0;
+  }
+}

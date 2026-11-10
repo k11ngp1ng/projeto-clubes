@@ -1,0 +1,54 @@
+{% extends 'base.html' %}
+{% from 'forms.html' import csrf,input,select,club_inputs with context %}
+{% macro post(action) %}<form method="post" class="stack" action="{{ url_for('change',cid=club.id,action=action) }}">{{ csrf() }}{{ caller() }}</form>{% endmacro %}
+{% block main %}
+{% set tabs=[] %}
+{% if manager %}{% set _=tabs.append(('socios','Sócios')) %}{% endif %}
+{% if member or finance %}{% set _=tabs.append(('mensalidades','Mensalidades')) %}{% endif %}
+{% if member or manager %}{% set _=tabs.extend([('salao','Salão social'),('mensagens','Mensagens')]) %}{% endif %}
+{% if member %}{% set _=tabs.append(('dependentes','Dependentes')) %}{% endif %}
+{% if manager %}{% set _=tabs.extend([('eventos','Eventos'),('gestao','Gestão do clube')]) %}{% endif %}
+{% set requested=request.args.get('aba') %}
+{% set tab=requested if requested in tabs|map('first')|list else tabs[0][0] %}
+<div class="hero"><div><small>{{ {'super':'Administração geral','presidente':'Presidência','associado':'Área do sócio','tesoureiro':'Tesouraria'}[g.user.role] }}</small>
+<h1>{{ club.name }}</h1><p>{{ g.user.name }}{% if member %} · {{ g.user.category }} · {{ 'Com' if g.user.category in categories[:2] else 'Sem' }} direito a voto{% endif %}</p></div>
+<a class="button light" href="{{ url_for('club',cid=club.id) }}">Ver página do clube ↗</a></div>
+{% if g.user.role=='super' %}<form class="switcher" method="get"><label>Administrar clube<select name="clube">{% for c in clubs %}<option value="{{ c.id }}" {% if club.id==c.id %}selected{% endif %}>{{ c.name }}</option>{% endfor %}</select></label><button>Selecionar</button></form>{% endif %}
+<nav class="tabs" aria-label="Seções do painel">{% for key,label in tabs %}<a {% if key==tab %}aria-current="page" class="selected"{% endif %} href="{{ url_for('panel',clube=club.id,aba=key) }}">{{ label }}</a>{% endfor %}</nav>
+
+{% if tab=='socios' %}<h2>Cadastros de sócios</h2>
+{% for m in members %}<article><div class="row"><div><h3>{{ m.name }}</h3><p>{{ m.email }} · {{ m.category }}</p></div><span class="pill">{{ m.status|capitalize }}</span></div>
+<details><summary>Analisar cadastro</summary>
+<dl>{% for k,l in [('cpf','CPF'),('birth','Nascimento'),('address','Endereço'),('district','Bairro'),('city','Cidade'),('uf','UF'),('phone','Telefone'),('sex','Sexo'),('civil','Estado civil'),('interests','Interesses')] %}<div><dt>{{ l }}</dt><dd>{{ m[k] or '—' }}</dd></div>{% endfor %}</dl>
+{% call post('socio') %}<input type="hidden" name="id" value="{{ m.id }}">{{ select('category','Tipo de sócio',categories,m.category) }}
+<label>Decisão<select name="status"><option value="ativo">Aprovar / manter ativo</option><option value="recusado" {% if m.status=='recusado' %}selected{% endif %}>Recusar</option></select></label>
+<button>Salvar decisão</button>{% endcall %}</details></article>{% else %}<p class="box">Nenhum cadastro recebido.</p>{% endfor %}
+
+{% elif tab=='mensalidades' %}<div class="section-heading"><h2>Mensalidades</h2><p>Valor mensal do clube · <strong>{{ club.fee|money }}</strong></p></div>
+{% if finance %}<details class="box"><summary>Gerar mensalidades do mês</summary>{% call post('gerar') %}{{ input('period','Mês de referência','month',month) }}<button>Gerar para os sócios ativos</button>{% endcall %}</details>{% endif %}
+{% for d in dues %}<article class="row"><div><small>{{ d.period|period }}</small><h3>{{ d.amount|money }}</h3><p>{% if finance %}{{ d.name }} · {% endif %}{{ 'Paga em ' ~ d.paid[8:10] ~ '/' ~ d.paid[5:7] ~ '/' ~ d.paid[:4] if d.paid else 'Em aberto' }}</p></div>
+{% if finance and not d.paid %}{% call post('pagar') %}<input type="hidden" name="id" value="{{ d.id }}"><button>Registrar pagamento</button>{% endcall %}{% endif %}</article>{% else %}<p class="box">Nenhuma mensalidade lançada.</p>{% endfor %}
+
+{% elif tab=='salao' %}<div class="section-heading"><h2>Reservas do salão</h2><a href="{{ url_for('club',cid=club.id) }}">Consultar agenda</a></div>
+{% if member %}<div class="box">{% call post('reserva') %}<h3>Solicitar reserva</h3>{{ input('purpose','Finalidade') }}<div class="grid">{{ input('starts','Início','datetime-local') }}{{ input('ends','Término','datetime-local') }}</div><button>Enviar pedido</button>{% endcall %}</div>{% endif %}
+{% for b in bookings %}<article><div class="row"><h3>{{ b.purpose }}</h3><span class="pill">{{ b.status }}</span></div>
+<p>{{ b.starts|when }} até {{ b.ends|when }}{% if manager %} · {{ b.name }}{% endif %}</p>
+{% if manager and b.status=='Pendente' %}{% call post('decidir') %}<input type="hidden" name="id" value="{{ b.id }}"><div class="actions"><button name="status" value="Aprovada">Aprovar</button><button class="light" name="status" value="Recusada">Recusar</button></div>{% endcall %}{% endif %}</article>{% else %}<p class="box">Nenhuma solicitação de reserva.</p>{% endfor %}
+
+{% elif tab=='mensagens' %}<h2>Solicitações e reclamações</h2>
+{% if member %}<div class="box">{% call post('mensagem') %}{{ select('kind','Tipo',['Solicitação','Reclamação']) }}<label>Mensagem<textarea name="body" required maxlength="2000"></textarea></label><button>Enviar à presidência</button>{% endcall %}</div>{% endif %}
+{% for t in tickets %}<article><small>{{ t.kind }} · {{ t.created[8:10] }}/{{ t.created[5:7] }}/{{ t.created[:4] }}</small>{% if manager %}<h3>{{ t.name }}</h3>{% endif %}<p>{{ t.body }}</p>
+{% if t.reply %}<strong>Resposta da presidência</strong><p>{{ t.reply }}</p>{% elif manager %}{% call post('responder') %}<input type="hidden" name="id" value="{{ t.id }}"><label>Resposta<textarea name="reply" required maxlength="2000"></textarea></label><button>Responder</button>{% endcall %}{% else %}<span class="pill">Aguardando resposta</span>{% endif %}</article>{% else %}<p class="box">Nenhuma mensagem até o momento.</p>{% endfor %}
+
+{% elif tab=='dependentes' %}<h2>Meus dependentes</h2><div class="box">{% call post('dependente') %}<div class="grid">{{ input('name','Nome do dependente') }}{{ input('birth','Data de nascimento','date') }}{{ input('relation','Parentesco') }}</div><button>Cadastrar dependente</button>{% endcall %}</div>
+{% for d in deps %}<article><h3>{{ d.name }}</h3><p>{{ d.relation }} · {{ d.birth[8:10] }}/{{ d.birth[5:7] }}/{{ d.birth[:4] }}</p></article>{% else %}<p class="box">Nenhum dependente cadastrado.</p>{% endfor %}
+
+{% elif tab=='eventos' %}<h2>Publicar evento</h2><div class="box">{% call post('evento') %}{{ input('name','Nome do evento') }}
+<div class="grid">{{ input('starts','Data e hora','datetime-local') }}{{ select('audience','Acesso',['Público','Associados']) }}</div>{{ input('target','A quem se destina') }}<button>Publicar evento</button>{% endcall %}</div>
+<a href="{{ url_for('club',cid=club.id) }}">Ver eventos na página do clube</a>
+
+{% elif tab=='gestao' %}<h2>Gestão do clube</h2>
+<details class="box" open><summary>Dados de {{ club.name }} · ID {{ club.id }}</summary>{% call post('clube') %}{{ club_inputs(club) }}<button>Salvar dados</button>{% endcall %}</details>
+{% if g.user.role=='super' %}<details class="box"><summary>Adicionar outro clube</summary>{% call post('novo-clube') %}{{ club_inputs() }}<button>Criar clube</button>{% endcall %}</details>
+<details class="box"><summary>Criar acesso da equipe de {{ club.initials }}</summary>{% call post('equipe') %}{{ input('name','Nome') }}{{ input('email','E-mail','email') }}{{ input('password','Senha','password') }}{{ select('role','Perfil',['presidente','tesoureiro']) }}<button>Criar acesso</button>{% endcall %}</details>{% endif %}
+{% endif %}{% endblock %}

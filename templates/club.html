@@ -1,0 +1,7 @@
+{% extends 'base.html' %}{% block title %}{{ club.name }} · Clubes do Oeste{% endblock %}{% block main %}
+<a class="back" href="{{ url_for('home') }}">← Todos os clubes</a>
+<div class="hero"><div><small>{{ club.initials }} · {{ club.city }}, {{ club.uf }}</small><h1>{{ club.name }}</h1><p>{{ club.address }} · {{ club.district }}</p><p>{{ club.phone }} · {{ club.email }}</p></div>
+{% if not g.user %}<a class="button" href="{{ url_for('signup',clube=club.id) }}">Solicitar associação</a>{% endif %}</div>
+<div class="columns"><section><h2>Próximos eventos</h2>{% for e in events %}<article><small>{{ e.starts|when }}</small><h3>{{ e.name }}</h3><p>{{ e.target }} · {{ 'Aberto ao público' if e.audience=='Público' else 'Exclusivo para associados' }}</p></article>{% else %}<p class="box">Nenhum evento disponível.</p>{% endfor %}</section>
+<section><h2>Agenda do salão social</h2>{% for b in bookings %}<article><h3>Salão reservado</h3><p>De {{ b.starts|when }} até {{ b.ends|when }}</p></article>{% else %}<p class="box">Nenhuma reserva confirmada para os próximos dias.</p>{% endfor %}</section></div>
+{% endblock %}

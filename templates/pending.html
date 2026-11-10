@@ -1,0 +1,3 @@
+{% extends 'base.html' %}{% block main %}<div class="narrow"><h1>Situação do cadastro</h1>
+<div class="box">{% if g.user.status=='pendente' %}<h2>Aguardando aprovação</h2><p>A presidência ainda está analisando seu pedido.</p>{% else %}<h2>Cadastro recusado</h2><p>Entre em contato com o clube para saber mais.</p>{% endif %}
+<a href="{{ url_for('club',cid=g.user.club) }}">Ver contato do clube</a></div></div>{% endblock %}
