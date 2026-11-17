@@ -21,6 +21,9 @@ from flask import (
 )
 from werkzeug.security import check_password_hash, generate_password_hash
 
+from flask import Blueprint
+from werkzeug.exceptions import HTTPException
+
 from database import close_db, db, init
 
 CATEGORIES = ("Associado", "Fundador", "Convidado", "Simpatizante")
@@ -70,8 +73,17 @@ class FormError(ValueError):
     pass
 
 
+def input_data():
+    if request.blueprint == "mobile":
+        data = request.get_json(silent=True)
+        if not isinstance(data, dict) or any(not isinstance(v, str) for v in data.values()):
+            raise FormError("Envie os campos em um objeto JSON com valores de texto.")
+        return data
+    return request.form
+
+
 def field(name, limit=200):
-    value = request.form.get(name, "").strip()
+    value = input_data().get(name, "").strip()
     if not value or len(value) > limit:
         raise FormError("Confira os campos obrigatórios e o tamanho do texto.")
     return value
@@ -112,7 +124,7 @@ def instant(key):
 
 
 def new_password():
-    value = request.form.get("password", "")
+    value = input_data().get("password", "")
     if not 8 <= len(value) <= 128:
         raise FormError("Use uma senha de 8 a 128 caracteres.")
     return generate_password_hash(value)
@@ -144,6 +156,48 @@ def rows(sql, args=()):
     return db().execute(sql, args).fetchall()
 
 
+def register_member():
+    cid = field("club")
+    one("SELECT id FROM clubs WHERE id=?", (cid,))
+    cpf = re.sub(r"[.\s-]", "", field("cpf"))
+    if not re.fullmatch(r"[0-9]{11}", cpf):
+        raise FormError("Informe os 11 dígitos do CPF.")
+    data = (
+        cid,
+        field("name"),
+        email(),
+        new_password(),
+        choice("category", CATEGORIES[2:]),
+        cpf,
+        field("address"),
+        field("district"),
+        field("city"),
+        choice("uf", STATES),
+        field("phone"),
+        field("sex"),
+        field("civil"),
+        birth(),
+        input_data().get("interests", "")[:300],
+    )
+    with db():
+        db().execute(
+            """INSERT INTO users(club,name,email,password,role,status,category,cpf,address,
+            district,city,uf,phone,sex,civil,birth,interests) VALUES(?,?,?,?,'associado','pendente',
+            ?,?,?,?,?,?,?,?,?,?,?)""",
+            data,
+        )
+
+
+def authenticate():
+    data = input_data()
+    user = db().execute(
+        "SELECT * FROM users WHERE email=?", (data.get("email", "").strip(),)
+    ).fetchone()
+    if user and check_password_hash(user["password"], data.get("password", "")):
+        return user
+    return None
+
+
 def create_app(instance_path=None):
     app = Flask(__name__, instance_path=instance_path)
     folder = Path(app.instance_path)
@@ -168,6 +222,8 @@ def create_app(instance_path=None):
         categories=CATEGORIES, states=STATES, club_fields=CLUB_FIELDS
     )
 
+    app.register_blueprint(mobile)
+
     @app.before_request
     def identify():
         g.user = (
@@ -177,10 +233,14 @@ def create_app(instance_path=None):
         )
         if "csrf" not in session:
             session["csrf"] = secrets.token_hex(24)
-        if request.method == "POST" and not hmac.compare_digest(
-            request.form.get("csrf", "").encode(), session["csrf"].encode()
-        ):
-            abort(400)
+        if request.method == "POST":
+            token = (
+                request.headers.get("X-CSRF-Token", "")
+                if request.blueprint == "mobile"
+                else request.form.get("csrf", "")
+            )
+            if not hmac.compare_digest(token.encode(), session["csrf"].encode()):
+                abort(400, "Sessão inválida. Entre novamente.")
 
     @app.route("/")
     def home():
@@ -218,17 +278,8 @@ def create_app(instance_path=None):
     @app.route("/entrar", methods=["GET", "POST"])
     def login():
         if request.method == "POST":
-            user = (
-                db()
-                .execute(
-                    "SELECT * FROM users WHERE email=?",
-                    (request.form.get("email", "").strip(),),
-                )
-                .fetchone()
-            )
-            if user and check_password_hash(
-                user["password"], request.form.get("password", "")
-            ):
+            user = authenticate()
+            if user:
                 session.clear()
                 session["uid"] = user["id"]
                 return redirect(url_for("panel"))
@@ -244,35 +295,7 @@ def create_app(instance_path=None):
     def signup():
         if request.method == "POST":
             try:
-                cid = field("club")
-                one("SELECT id FROM clubs WHERE id=?", (cid,))
-                cpf = re.sub(r"[.\s-]", "", field("cpf"))
-                if not re.fullmatch(r"[0-9]{11}", cpf):
-                    raise FormError("Informe os 11 dígitos do CPF.")
-                data = (
-                    cid,
-                    field("name"),
-                    email(),
-                    new_password(),
-                    choice("category", CATEGORIES[2:]),
-                    cpf,
-                    field("address"),
-                    field("district"),
-                    field("city"),
-                    choice("uf", STATES),
-                    field("phone"),
-                    field("sex"),
-                    field("civil"),
-                    birth(),
-                    request.form.get("interests", "")[:300],
-                )
-                with db():
-                    db().execute(
-                        """INSERT INTO users(club,name,email,password,role,status,category,cpf,address,
-                        district,city,uf,phone,sex,civil,birth,interests) VALUES(?,?,?,?,'associado','pendente',
-                        ?,?,?,?,?,?,?,?,?,?,?)""",
-                        data,
-                    )
+                register_member()
                 flash("Cadastro enviado. Entre para acompanhar a aprovação.")
                 return redirect(url_for("login"))
             except FormError as e:
@@ -542,6 +565,90 @@ def apply_change(action, club, uid):
             (date.today().isoformat(), did),
         )
         return "Pagamento registrado."
+
+
+mobile = Blueprint("mobile", __name__, url_prefix="/api")
+
+
+@mobile.errorhandler(FormError)
+def invalid_field(error):
+    return {"message": str(error)}, 400
+
+
+@mobile.errorhandler(HTTPException)
+def api_error(error):
+    return {"message": error.description}, error.code
+
+
+@mobile.get("/inicio")
+def mobile_start():
+    clubs = rows("SELECT id,name,city FROM clubs ORDER BY city,name")
+    return {"csrf": session["csrf"], "clubs": [dict(c) for c in clubs], "states": STATES}
+
+
+@mobile.post("/cadastro")
+def mobile_signup():
+    try:
+        register_member()
+    except sqlite3.IntegrityError:
+        return {"message": "Já existe cadastro com esse e-mail ou CPF no clube."}, 409
+    return {"message": "Cadastro enviado. Entre para acompanhar a aprovação."}, 201
+
+
+@mobile.post("/entrar")
+def mobile_login():
+    user = authenticate()
+    if not user:
+        abort(401, "E-mail ou senha incorretos.")
+    if user["role"] != "associado":
+        abort(403, "Use a aplicação web para acessar o painel da equipe.")
+    session.clear()
+    session.update(uid=user["id"], csrf=secrets.token_hex(24))
+    return {"csrf": session["csrf"]}
+
+
+def current_member():
+    if not g.user:
+        abort(401, "Entre novamente para continuar.")
+    if g.user["role"] != "associado":
+        abort(403, "Acesso exclusivo de sócios.")
+    return g.user
+
+
+@mobile.get("/painel")
+def mobile_panel():
+    member = current_member()
+    uid, cid = member["id"], member["club"]
+    club = one("SELECT name FROM clubs WHERE id=?", (cid,))
+    data = {
+        "name": member["name"], "status": member["status"], "club": club["name"],
+        "category": member["category"],
+        "vote": member["status"] == "ativo" and member["category"] in CATEGORIES[:2],
+        "dues": [], "bookings": [], "tickets": [],
+    }
+    if member["status"] == "ativo":
+        queries = {
+            "dues": "SELECT period,amount,paid FROM dues WHERE member=? ORDER BY period DESC",
+            "bookings": "SELECT purpose,starts,ends,status FROM bookings WHERE member=? ORDER BY starts DESC",
+            "tickets": "SELECT kind,body,reply,created FROM tickets WHERE member=? ORDER BY id DESC",
+        }
+        for key, query in queries.items():
+            data[key] = [dict(r) for r in rows(query, (uid,))]
+    return data
+
+
+@mobile.post("/reservas", defaults={"action": "reserva"})
+@mobile.post("/mensagens", defaults={"action": "mensagem"})
+def mobile_request(action):
+    with db():
+        db().execute("BEGIN IMMEDIATE")
+        member = current_member()
+        active = one("SELECT * FROM users WHERE id=?", (member["id"],))
+        if active["status"] != "ativo" or active["role"] != "associado":
+            abort(403, "Seu cadastro precisa estar aprovado.")
+        club = one("SELECT * FROM clubs WHERE id=?", (active["club"],))
+        message = apply_change(action, club, active["id"])
+    return {"message": message}, 201
 
 
 if __name__ == "__main__":

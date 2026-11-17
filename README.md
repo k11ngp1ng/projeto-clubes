@@ -1,19 +1,6 @@
 # Projeto Clubes
 
-Sistema acadêmico para administrar clubes de Foz do Iguaçu e Guaíra. O sócio usa o navegador do celular para solicitar associação, reservar o salão e consultar mensalidades. A equipe entra no mesmo sistema e recebe um painel conforme a função.
-
-## O que falta para a entrega web + .NET MAUI
-
-A web em Flask já atende o presidente, o tesoureiro e o superadministrador. A área do sócio também funciona no navegador. Ainda faltam o projeto .NET MAUI, a API que ele vai consumir e a demonstração integrada. O plano é manter um único banco SQLite no servidor. Assim, quando o presidente aprovar um pedido na web, o sócio verá a decisão ao atualizar a tela do app.
-
-| Ordem | Implementar | Como saber que funciona |
-| --- | --- | --- |
-| 1. Cadastro e aprovação | Criar o app MAUI com seleção de clube, cadastro de convidado ou simpatizante e login. Expor essas operações em uma API JSON do Flask, reaproveitando as regras de cadastro. | Cadastrar pelo app, ver “Aguardando aprovação”, aprovar na web e atualizar o app para ver nome do clube, categoria e direito a voto. Um cadastro pendente ou recusado fica sem acesso às operações do sócio. |
-| 2. Reserva do salão | No app, informar finalidade, data e hora de início e de término. Mostrar a situação do pedido. Usar a mesma verificação de horários da web. | Pedir o salão de sábado à noite até domingo de manhã, aprovar na web e conferir o horário na agenda do site. O app mostra “Aprovada” e informa quando o período já está ocupado. |
-| 3. Atendimento e mensalidades | No app, reunir solicitações e reclamações em uma tela com tipo, mensagem e resposta. Em Mensalidades, listar mês, valor e situação do titular. | Enviar uma reclamação pelo app e ler a resposta da presidência. Gerar a mensalidade na web, conferir “Em aberto” no app, registrar o pagamento como tesoureiro e atualizar para ver “Paga”. |
-| 4. Entrega | Incluir o app no mesmo repositório e documentar como iniciar o servidor e conectar o app no aparelho ou emulador escolhido. | Em uma cópia limpa do repositório, seguir as instruções com dados fictícios e repetir o fluxo usando o app e o navegador lado a lado. |
-
-Em cada etapa, a API deve identificar o titular pela sessão autenticada e limitar as consultas e alterações aos dados desse titular e do clube dele. A versão inicial mantém os dependentes vinculados ao titular pelo cadastro web. Acesso próprio para dependente pode ser acrescentado se o professor confirmar essa necessidade.
+Sistema acadêmico para os clubes de Foz do Iguaçu e Guaíra. A equipe usa a web para administrar o clube. O sócio acessa o app .NET MAUI para Android ou Windows para se cadastrar, acompanhar a aprovação, reservar o salão, conversar com a presidência e consultar mensalidades. A web e o app usam os mesmos registros no servidor Flask com SQLite.
 
 ## Rodar a demonstração
 
@@ -41,6 +28,22 @@ CDC identifica o Clube das Cataratas. Nos outros clubes, os e-mails da equipe se
 
 **Para testar em um celular**, conecte-o ao mesmo Wi-Fi do computador. No PowerShell, na pasta do projeto, execute `$env:CLUBES_HOST = "0.0.0.0"` e depois `.\iniciar.cmd`. No celular, abra `http://IP-DO-COMPUTADOR:8000` usando o IPv4 da rede local. O Windows pode pedir acesso à rede privada. Use dados fictícios na demonstração.
 
+## Abrir o app do sócio
+
+1. Inicie a web com **iniciar.cmd** e mantenha o servidor aberto. Se ele já estava rodando antes de atualizar o código, reinicie-o.
+2. Para apresentar tudo no mesmo PC Windows, abra **iniciar-app.cmd**. É preciso ter o SDK .NET 10 e as ferramentas .NET MAUI para Windows. Na primeira compilação, aguarde a restauração dos pacotes. O app abre em uma janela própria. O endereço padrão é `http://127.0.0.1:8000`.
+3. Para usar Android, abra `mobile/Clubes.App/Clubes.App.csproj` no Visual Studio com as ferramentas .NET MAUI e o SDK Android instalados. Escolha um emulador Android e execute em **Debug**. O app já vem configurado para `http://10.0.2.2:8000` no Android.
+4. Para usar um aparelho Android físico, inicie o servidor com `CLUBES_HOST=0.0.0.0` conforme as instruções de Wi-Fi acima. Execute a versão Debug no aparelho. Na tela de entrada do app, altere **Endereço do servidor** para `http://IP-DO-COMPUTADOR:8000`. O app lembra o último endereço usado com sucesso. O HTTP no Android está habilitado para a demonstração em Debug.
+5. Entre com o sócio de demonstração ou toque em **Solicitar associação**. Use **Atualizar** para consultar uma decisão ou pagamento registrado na web.
+
+A versão Android usa CoreCLR para que as consultas ao servidor funcionem no emulador testado (Android 15, API 35). No .NET 10, a Microsoft classifica esse runtime no Android como experimental. [Documentação do .NET MAUI 10](https://learn.microsoft.com/en-us/dotnet/maui/whats-new/dotnet-10?view=net-maui-10.0#experimental-coreclr)
+
+Para compilar os dois destinos em um Windows com as ferramentas de Android e Windows instaladas, execute o comando abaixo.
+
+```powershell
+dotnet build mobile/Clubes.App/Clubes.App.csproj
+```
+
 ## Planejamento e critérios de entrega
 
 | Etapa | Entrega | Como verificar |
@@ -61,11 +64,12 @@ CDC identifica o Clube das Cataratas. Nos outros clubes, os e-mails da equipe se
 
 ## Roteiro para apresentar ao professor
 
-1. Abra o **Clube das Cataratas** no diretório e clique em **Solicitar associação**. Use nome, CPF fictício com 11 dígitos e e-mail de teste. Selecione **Convidado**. Entre com essa conta para mostrar o pedido pendente.
-2. Em outro navegador ou em uma janela privativa, entre como **presidente**. Em **Sócios → Analisar cadastro**, aprove o pedido. Atualize a janela do sócio para mostrar o painel liberado.
-3. Como sócio, cadastre um dependente e peça o salão de sábado às 18h até domingo às 10h, usando datas futuras. Como presidente, aprove o pedido. Abra **Ver página do clube** para mostrar o intervalo na agenda.
-4. Como sócio, envie uma reclamação em **Mensagens**. Responda na conta da presidência e confira a resposta na conta do sócio.
-5. Entre como **tesoureiro**. Gere as mensalidades do mês e registre o pagamento do novo sócio. Na janela dele, abra **Mensalidades** e confira o valor, o mês e a data da baixa.
+1. No **app MAUI**, toque em **Solicitar associação**. Escolha o Clube das Cataratas, a categoria Convidado e preencha o cadastro com dados fictícios. Entre com a nova conta para ver “Aguardando aprovação”.
+2. No **navegador**, entre como presidente do mesmo clube. Em **Sócios → Analisar cadastro**, aprove o pedido. No app, toque em **Atualizar** para liberar o painel.
+3. No app, peça o salão de sábado às 18h até domingo às 10h, usando datas futuras. Aprove pela web. Confira o intervalo na agenda do site e a situação “Aprovada” na lista do app.
+4. Envie uma reclamação no app, responda na web como presidente e toque em **Atualizar** no app para ler a resposta.
+5. Entre na web como tesoureiro, gere as mensalidades do mês e confira “Em aberto” no app. Registre o pagamento na web e atualize **Minhas mensalidades** no app para mostrar a data da baixa.
+6. Para mostrar os dependentes, use a área web do titular. Para apresentar um evento exclusivo, publique-o na presidência e compare a página pública do clube com a página vista pelo sócio aprovado.
 
 ## Estrutura e verificação
 

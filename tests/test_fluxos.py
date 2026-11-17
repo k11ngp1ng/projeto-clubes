@@ -129,6 +129,55 @@ class FluxosDoClube(unittest.TestCase):
         self.assertIn("Salão reservado", public)
         self.assertNotIn("Confraternização", public)
 
+    def test_app_integrado_com_presidencia_e_tesouraria(self):
+        mobile = self.app.test_client()
+        start = mobile.get("/api/inicio").json
+        self.assertEqual(len(start["clubs"]), 4)
+        headers = {"X-CSRF-Token": start["csrf"]}
+        account = dict(email="mobile@example.test", password=self.password)
+        form = dict(**account, club="1", category="Convidado", name="Sócio Mobile",
+                    cpf="00000000002", birth="2000-01-01", city="Foz do Iguaçu",
+                    address="Rua A", district="Centro", uf="PR", phone="4500000000",
+                    sex="Outro", civil="Outro", interests="Pesca")
+        self.assertEqual(mobile.post("/api/cadastro", json=form).status_code, 400)
+        self.assertEqual(mobile.get("/api/painel").status_code, 401)
+        self.assertEqual(mobile.post("/api/cadastro", json=form, headers=headers).status_code, 201)
+        self.assertEqual(mobile.post("/api/cadastro", json=form, headers=headers).status_code, 409)
+        login = mobile.post("/api/entrar", json=account, headers=headers)
+        headers["X-CSRF-Token"] = login.json["csrf"]
+        self.assertEqual(mobile.get("/api/painel").json["status"], "pendente")
+        self.assertEqual(mobile.post("/api/reservas", json={}, headers=headers).status_code, 403)
+        mid = self.scalar("SELECT id FROM users WHERE email='mobile@example.test'")
+        self.login("presidente@cdc.test")
+        self.post("/painel/1/socio", id=mid, category="Convidado", status="ativo")
+        panel = mobile.get("/api/painel").json
+        self.assertEqual(panel["status"], "ativo")
+        self.assertFalse(panel["vote"])
+        self.assertEqual(panel["dues"], [])  # A cobrança do fundador é privada.
+        first = (date.today() + timedelta(days=3)).isoformat()
+        last = (date.today() + timedelta(days=4)).isoformat()
+        booking = dict(purpose="Feijoada", starts=first + "T18:00", ends=last + "T10:00")
+        self.assertEqual(mobile.post("/api/reservas", json=booking, headers=headers).status_code, 201)
+        self.post("/painel/1/decidir", id=1, status="Aprovada")
+        conflict = mobile.post("/api/reservas", json=booking, headers=headers)
+        self.assertEqual(conflict.status_code, 400)
+        self.assertIn("já está reservado", conflict.json["message"])
+        ticket = dict(kind="Reclamação", body="Lâmpada queimada", member="1", club="3")
+        self.assertEqual(mobile.post("/api/mensagens", json=ticket, headers=headers).status_code, 201)
+        self.post("/painel/1/responder", id=1, reply="Troca agendada")
+        self.login("tesoureiro@cdc.test")
+        self.post("/painel/1/gerar", period="2040-01")
+        did = self.scalar(f"SELECT id FROM dues WHERE member={mid}")
+        self.post("/painel/1/pagar", id=did)
+        panel = mobile.get("/api/painel").json
+        self.assertEqual(panel["tickets"][0]["reply"], "Troca agendada")
+        self.assertEqual(panel["bookings"][0]["status"], "Aprovada")
+        self.assertEqual(panel["dues"], [dict(amount=5000, paid=date.today().isoformat(), period="2040-01")])
+        self.login("presidente@cdc.test")
+        self.post("/painel/1/socio", id=mid, category="Convidado", status="recusado")
+        self.assertEqual(mobile.get("/api/painel").json["tickets"], [])
+        self.assertEqual(mobile.post("/api/mensagens", json=ticket, headers=headers).status_code, 403)
+
     def test_gestao_geral(self):
         self.login("admin@clubes.test")
         self.assertEqual(self.client.get("/painel?aba=gestao").status_code, 200)
