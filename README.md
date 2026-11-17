@@ -2,6 +2,19 @@
 
 Sistema acadêmico para administrar clubes de Foz do Iguaçu e Guaíra. O sócio usa o navegador do celular para solicitar associação, reservar o salão e consultar mensalidades. A equipe entra no mesmo sistema e recebe um painel conforme a função.
 
+## O que falta para a entrega web + .NET MAUI
+
+A web em Flask já atende o presidente, o tesoureiro e o superadministrador. A área do sócio também funciona no navegador. Ainda faltam o projeto .NET MAUI, a API que ele vai consumir e a demonstração integrada. O plano é manter um único banco SQLite no servidor. Assim, quando o presidente aprovar um pedido na web, o sócio verá a decisão ao atualizar a tela do app.
+
+| Ordem | Implementar | Como saber que funciona |
+| --- | --- | --- |
+| 1. Cadastro e aprovação | Criar o app MAUI com seleção de clube, cadastro de convidado ou simpatizante e login. Expor essas operações em uma API JSON do Flask, reaproveitando as regras de cadastro. | Cadastrar pelo app, ver “Aguardando aprovação”, aprovar na web e atualizar o app para ver nome do clube, categoria e direito a voto. Um cadastro pendente ou recusado fica sem acesso às operações do sócio. |
+| 2. Reserva do salão | No app, informar finalidade, data e hora de início e de término. Mostrar a situação do pedido. Usar a mesma verificação de horários da web. | Pedir o salão de sábado à noite até domingo de manhã, aprovar na web e conferir o horário na agenda do site. O app mostra “Aprovada” e informa quando o período já está ocupado. |
+| 3. Atendimento e mensalidades | No app, reunir solicitações e reclamações em uma tela com tipo, mensagem e resposta. Em Mensalidades, listar mês, valor e situação do titular. | Enviar uma reclamação pelo app e ler a resposta da presidência. Gerar a mensalidade na web, conferir “Em aberto” no app, registrar o pagamento como tesoureiro e atualizar para ver “Paga”. |
+| 4. Entrega | Incluir o app no mesmo repositório e documentar como iniciar o servidor e conectar o app no aparelho ou emulador escolhido. | Em uma cópia limpa do repositório, seguir as instruções com dados fictícios e repetir o fluxo usando o app e o navegador lado a lado. |
+
+Em cada etapa, a API deve identificar o titular pela sessão autenticada e limitar as consultas e alterações aos dados desse titular e do clube dele. A versão inicial mantém os dependentes vinculados ao titular pelo cadastro web. Acesso próprio para dependente pode ser acrescentado se o professor confirmar essa necessidade.
+
 ## Rodar a demonstração
 
 No Windows, instale Python 3.10 ou superior, baixe e extraia o projeto e abra **iniciar.cmd**. A primeira execução usa internet para instalar duas dependências. Quando o terminal mostrar o endereço, abra **http://127.0.0.1:8000**. Mantenha o terminal aberto durante a apresentação.
